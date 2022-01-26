@@ -1,13 +1,7 @@
-from database import db_session
-from flask import Flask, render_template, url_for, request, redirect, jsonify
-import models
-
-app = Flask(__name__)
-
-
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    db_session.remove()
+from flask import request, jsonify, make_response
+from emp_details.database import db_session
+import emp_details.models as models
+from emp_details import app
 
 
 @app.route('/employee', methods=['GET', 'POST', 'DELETE'])
@@ -66,7 +60,3 @@ def home():
     session = db_session()
     res = session.query(models.User).all()
     return jsonify([user.to_json() for user in res])
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
