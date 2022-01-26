@@ -1,5 +1,5 @@
 from flask import Flask
-from emp_details.database import db_session
+from .database import db_session
 
 app = Flask(__name__)
 
