@@ -1,3 +1,4 @@
+from unicodedata import name
 from flask import request, jsonify, make_response
 from emp_details.database import db_session
 import emp_details.models as models
@@ -12,9 +13,13 @@ def employee():
         return jsonify([user.to_json() for user in users])
 
     if(request.method == 'POST'):
-        name = request.form['name']
-        email = request.form['email']
-        department = request.form['department']
+        # get the data from the POST body
+        data = request.get_json()
+        print(data)
+        # create a new user object
+        name = data['name']
+        email = data['email']
+        department = data['department']
         new_user = models.User(name, email, department)
         db_session.add(new_user)
         db_session.commit()
@@ -48,9 +53,11 @@ def employee_with_id(emp_id):
         if(user == None):
             return jsonify({'error': 'User not found'})
 
-        user.name = request.form['name']
-        user.email = request.form['email']
-        user.department = request.form['department']
+        # get the data from the POST body
+        data = request.get_json()
+        user.name = data['name']
+        user.email = data['email']
+        user.department = data['department']
         db_session.commit()
         return jsonify(user.to_json())
 
