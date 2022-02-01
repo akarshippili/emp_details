@@ -9,6 +9,7 @@ from emp_details import app
 def employee():
     print(request.method)
     if(request.method == 'GET'):
+        # access query parameters
         users = models.User.query.all()
         return jsonify([user.to_json() for user in users])
 
@@ -21,10 +22,13 @@ def employee():
         email = data['email']
         department = data['department']
         new_user = models.User(name, email, department)
-        db_session.add(new_user)
-        db_session.commit()
-        db_session.refresh(new_user)
-
+        try:
+            db_session.add(new_user)
+            db_session.commit()
+            db_session.refresh(new_user)
+        except Exception as e:
+            print(e)
+            return jsonify({'error': 'Unable to add user'}), 409
         return jsonify(new_user.to_json()), 201
 
 
@@ -51,14 +55,18 @@ def employee_with_id(emp_id):
         user = models.User.query.get(emp_id)
 
         if(user == None):
-            return jsonify({'error': 'User not found'})
+            return jsonify({'error': 'User not found'}), 404
 
         # get the data from the POST body
         data = request.get_json()
         user.name = data['name']
         user.email = data['email']
         user.department = data['department']
-        db_session.commit()
+        try:
+            db_session.commit()
+        except Exception as e:
+            print(e)
+            return jsonify({'error': 'Unable to update user'}), 409
         return jsonify(user.to_json())
 
 
