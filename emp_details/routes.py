@@ -1,3 +1,4 @@
+from datetime import datetime
 from unicodedata import name
 from flask import request, jsonify, make_response
 from emp_details.database import db_session
@@ -26,9 +27,28 @@ def employee():
             db_session.add(new_user)
             db_session.commit()
             db_session.refresh(new_user)
+
         except Exception as e:
             print(e)
-            return jsonify({'error': 'Unable to add user'}), 409
+            # chack if e has 'not present in table "departments"'
+            # if(str(e).find('not present in table "departments"') != -1):
+            #     error_type = 'department does not exist'
+            # elif(str(e).find('users_email_key')):
+            #     error_type = 'email alraedy exists'
+            # else:
+            #     error_type = 'unknown error'
+
+            if(str(e).find('UNIQUE constraint') != -1):
+                error_type = 'email alraedy exists'
+            elif(str(e).find('FOREIGN KEY constraint') != -1):
+                error_type = 'department does not exist'
+            else:
+                error_type = 'unknown error'
+
+            return jsonify({
+                'error': 'Unable to add user',
+                "exception": error_type}), 409
+
         return jsonify(new_user.to_json()), 201
 
 
@@ -62,11 +82,30 @@ def employee_with_id(emp_id):
         user.name = data['name']
         user.email = data['email']
         user.department = data['department']
+        user.created_at = datetime.now()
         try:
             db_session.commit()
         except Exception as e:
             print(e)
-            return jsonify({'error': 'Unable to update user'}), 409
+
+            # if(str(e).find('not present in table "departments"') != -1):
+            #     error_type = 'department does not exist'
+            # elif(str(e).find('users_email_key')):
+            #     error_type = 'email alraedy exists'
+            # else:
+            #     error_type = 'unknown error'
+
+            if(str(e).find('UNIQUE constraint') != -1):
+                error_type = 'email alraedy exists'
+            elif(str(e).find('FOREIGN KEY constraint') != -1):
+                error_type = 'department does not exist'
+            else:
+                error_type = 'unknown error'
+
+            return jsonify({
+                'error': 'Unable to update user',
+                "exception": error_type}), 409
+
         return jsonify(user.to_json())
 
 
@@ -75,3 +114,29 @@ def home():
     session = db_session()
     res = session.query(models.User).all()
     return jsonify([user.to_json() for user in res])
+
+
+@app.route('/departments', methods=['GET', 'POST'])
+def department():
+    print(request.method)
+    if(request.method == 'GET'):
+        # access query parameters
+        departments = models.Department.query.all()
+        return jsonify([department.to_json() for department in departments])
+
+    if(request.method == 'POST'):
+        # get the data from the POST body
+        data = request.get_json()
+        print(data)
+        # create a new user object
+        id = data['id']
+        name = data['name']
+        new_department = models.Department(id, name)
+        try:
+            db_session.add(new_department)
+            db_session.commit()
+            db_session.refresh(new_department)
+        except Exception as e:
+            print(e)
+            return jsonify({'error': 'Unable to add department'}), 409
+        return jsonify(new_department.to_json()), 201
